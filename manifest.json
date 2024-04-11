@@ -1,9 +1,40 @@
 {
     "manifest_version": 3,
-    "name": "sample extention",
-    "version": "1.0.0",
-    "description": "A basic example extension for testing parental control apis",
+    "name": "My Login Extension",
+    "version": "1.0",
+    "description": "A simple login extension.",
+    "permissions": [
+      "storage",
+      "tabs",
+      "activeTab",
+      "windows",
+      "declarativeNetRequest"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "action": {
+      "default_popup": "popup.html"
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["content.js"]
+      }
+    ],
     "icons": {
-      "48": "/Logo.png"
+      "16": "Logo.png",
+      "48": "Logo.png",
+      "128": "/Logo.png"
+    },
+  
+    "declarative_net_request": {
+        "rule_resources": [
+            {
+                "id": "ruleset_1",
+                "enabled": true,
+                "path": "rules.json"
+            }
+        ]
     }
-  }
+}
