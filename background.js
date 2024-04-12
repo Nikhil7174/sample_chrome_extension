@@ -44,12 +44,12 @@ function startKidsMode(username, password, sendResponse) {
 
 // Function to handle user logout
 function logoutUser(username, password, sendResponse) {
-    // chrome.storage.local.get(['loggedIn', 'username', 'password'], function(data) {
-    //     const storedUsername = data.username;
-    //     const storedPassword = data.password;
-    //     console.log(username, password)
-    //     console.log(storedUsername, storedPassword)
-    // if(true){
+    chrome.storage.local.get(['loggedIn', 'username', 'password'], function(data) {
+        const storedUsername = data.username;
+        const storedPassword = data.password;
+        console.log(username, password)
+        console.log(storedUsername, storedPassword)
+    if(storedPassword === password && storedUsername === username){
     chrome.storage.local.remove(['loggedIn', 'username'], function () {
         if (chrome.runtime.lastError) {
             console.error('Error clearing data:', chrome.runtime.lastError);
@@ -70,8 +70,8 @@ function logoutUser(username, password, sendResponse) {
     }),
     );
 }
-// })
-// }
+})
+}
 
 //Function to handle session timeout
 function sessionTimeout(){

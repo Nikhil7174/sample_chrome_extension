@@ -5,7 +5,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const statusDiv = document.getElementById('status');
     const loginContainer = document.getElementById('container');
     const kidsContent = document.getElementById('kidsContent');
-    const logoutButton = document.getElementById('logoutBtn');    
+    const logoutButton = document.getElementById('logoutBtn'); 
+    const username2 = document.getElementById('username2'); 
+    const password2 = document.getElementById('password2'); 
+
 
     // Function to update popup content based on login status
     function updatePopupContent() {
@@ -32,6 +35,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const username = usernameInput.value;
         const password = passwordInput.value;
 
+        console.log(username, "pppp")
+
         statusDiv.textContent = '';
 
         // Send login request to background script
@@ -49,13 +54,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Event listener for logout button
-    logoutButton.addEventListener('click', function () {
-        // event.preventDefault();
-        // const username = usernameInput.value;
-        // const password = passwordInput.value;
+    logoutButton.addEventListener('click', function (event) {
+        event.preventDefault();
+        // console.log(usernameInput.value, "0000000000000")
+        const username = username2.value;
+        const password = password2.value;
         // console.log(username , "rrr")
 
-        // statusDiv.textContent = '';
+        statusDiv.textContent = '';
 
         // Send logout request to background script
         chrome.runtime.sendMessage({ action: 'logout', username: username, password: password }, function (response) {
@@ -64,8 +70,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 updatePopupContent();
             } else {
                 statusDiv.textContent = 'Failed to logout.';
-                // usernameInput.value = '';
-                // passwordInput.value = '';
+                usernameInput.value = '';
+                passwordInput.value = '';
             }
         });
     });
