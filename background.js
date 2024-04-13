@@ -21,29 +21,42 @@ function startSessionTimeout() {
 function startKidsMode(username, password, sendResponse) {
     console.log(username, password);
 
-    chrome.storage.local.set({ loggedIn: true, username: username, password: password }, function () {
-        if (chrome.runtime.lastError) {
-            console.error('Error storing data:', chrome.runtime.lastError);
-            sendResponse({ success: false });
-        } else if (username && password) {
-            console.log('kids mode started successfully:', username);
-            sendResponse({ success: true });
+    // Close all existing windows
+    chrome.windows.getAll({ populate: true }, function (windows) {
+        windows.forEach(function (window) {
+            chrome.windows.remove(window.id);
+        });
 
-            startSessionTimeout();
+        // Set the user as logged in
+        chrome.storage.local.set({ loggedIn: true, username: username, password: password }, function () {
+            if (chrome.runtime.lastError) {
+                console.error('Error storing data:', chrome.runtime.lastError);
+                sendResponse({ success: false });
+            } else if (username && password) {
+                console.log('Kids mode started successfully:', username);
+                sendResponse({ success: true });
 
-            chrome.windows.create({
-                url: '/home.html',
-                type: 'normal' 
-            }, chrome.windows.getCurrent(function (currentWindow) {
-                chrome.windows.remove(currentWindow.id);
-            }),
-            );
-        }
+                // Start session timeout
+                startSessionTimeout();
+
+                // Create a new window
+                chrome.windows.create({
+                    url: '/home.html',
+                    type: 'normal'
+                });
+            }
+        });
     });
 }
 
+
 // Function to handle user logout
 function logoutUser(username, password, sendResponse) {
+        // Close all existing windows
+        chrome.windows.getAll({ populate: true }, function (windows) {
+            windows.forEach(function (window) {
+                chrome.windows.remove(window.id);
+            });
     chrome.storage.local.get(['loggedIn', 'username', 'password'], function(data) {
         const storedUsername = data.username;
         const storedPassword = data.password;
@@ -65,11 +78,11 @@ function logoutUser(username, password, sendResponse) {
         url: 'https://google.com',
         type: 'normal' 
     },
-    chrome.windows.getCurrent(function (currentWindow) {
-        chrome.windows.remove(currentWindow.id);
-    }),
-    );
-}
+    // chrome.windows.getCurrent(function (currentWindow) {
+    //     chrome.windows.remove(currentWindow.id);
+    // }),
+    )}
+})
 })
 }
 
