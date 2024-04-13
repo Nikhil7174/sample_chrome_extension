@@ -56,10 +56,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Event listener for logout button
     logoutButton.addEventListener('click', function (event) {
         event.preventDefault();
-        // console.log(usernameInput.value, "0000000000000")
         const username = username2.value;
         const password = password2.value;
-        // console.log(username , "rrr")
 
         statusDiv.textContent = '';
 

@@ -7,16 +7,20 @@ function startSessionTimeout() {
     timeoutId = setTimeout(sessionTimeout, timeoutDuration);
 }
 
-// Function to handle new window creation attempts
-// function handleNewWindowCreation(windowInfo) {
-//     // If the user is logged out (session timed out), prevent new window creation
-
-//         // Close the newly created window
-//         chrome.windows.remove(windowInfo.id, function() {
-//             console.log('New window creation prevented due to session timeout.');
-//         });
-    
-// }
+// Event listener for tab creation
+// chrome.tabs.onCreated.addListener(function(tab) {
+//     // Check if kids mode is on
+//     chrome.storage.local.get(['loggedIn', 'sessionTimedOut'], function(data) {
+//         if (data.loggedIn && data.sessionTimedOut) {
+//             // Kids mode is on and session has timed out, get the URL of the newly created tab
+//             const tabUrl = tab.url;
+//             console.log("New tab URL:", tabUrl);
+//             if (tabUrl !== "chrome://extensions/") {
+//                 chrome.tabs.update(tab.id, { url: '/sessionTimeout.html' });
+//             }
+//         }
+//     });
+// });
 
 function startKidsMode(username, password, sendResponse) {
     console.log(username, password);
@@ -88,14 +92,15 @@ function logoutUser(username, password, sendResponse) {
 
 //Function to handle session timeout
 function sessionTimeout(){
+    chrome.windows.getAll({ populate: true }, function (windows) {
+        windows.forEach(function (window) {
+            chrome.windows.remove(window.id);
+        });
     chrome.windows.create({
         url: '/sessionTimeout.html',
         type: 'normal' 
     },
-    chrome.windows.getCurrent(function (currentWindow) {
-        chrome.windows.remove(currentWindow.id);
-    }),
-    )
+    )})
     // handleNewWindowCreation();
 }
 
