@@ -2,7 +2,12 @@
 
 body {
     font-family: Arial, sans-serif;
+    background-color: bisque;
     /* background-image: url("/pc2.png") ; */
+  }
+
+  h1{
+    color: #b37400;
   }
   
   #container {
@@ -13,18 +18,31 @@ body {
     width: 250px;
     padding: 20px;
   }
-  
+  #loginForm{
+    margin-right: 27px;
+  }
+  input{
+    padding: 5px;
+    align-items: center;
+    border-radius: 10px;
+    margin: 5px;
+  }
+  #username2, #password2{
+    width: 90%;
+  }
   input[type="text"],
   input[type="password"],
+ 
   button {
     display: block;
     margin-bottom: 10px;
     width: 100%;
+    margin-right:10px ;
   }
   
   button {
-    padding: 5px 15px;
-    background-image: linear-gradient(to right, rgb(19, 173, 101) , rgb(32, 167, 149));
+    padding: 10px;
+    background-image: linear-gradient(to right, rgb(173, 145, 19) , rgb(167, 86, 32));
     color: #fff;
     border: none;
     cursor: pointer;

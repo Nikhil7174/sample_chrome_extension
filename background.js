@@ -71,12 +71,12 @@ function allowHttpsSearch(callback) {
 function startKidsMode(username, password, sendResponse) {
     // console.log(username, password);
 
-
+    if(username === password){
     // Set the user as logged in
 hashPassword(password).then(hash => {
     // console.log('Hashed password:', hash);
     
-    chrome.storage.local.set({ loggedIn: true, username: username, password: hash }, function () {
+    chrome.storage.local.set({ loggedIn: true, password:hash }, function () {
         if (chrome.runtime.lastError) {
             console.error('Error storing data:', chrome.runtime.lastError);
             sendResponse({ success: false });
@@ -101,12 +101,12 @@ hashPassword(password).then(hash => {
     }).catch(error => {
         console.error('Error hashing password:', error);
     });
-    });
+    });}
 }
 
 
 // Function to handle user logout
-function logoutUser(username, password, sendResponse) {
+function logoutUser(password, sendResponse) {
     // Close all existing windows
     chrome.storage.local.set({ sessionTimeout: false }, function () {
         if (chrome.runtime.lastError) {
@@ -114,15 +114,14 @@ function logoutUser(username, password, sendResponse) {
         }
     });
 
-    chrome.storage.local.get(['loggedIn', 'username', 'password'], function (data) {
-        const storedUsername = data.username;
+    chrome.storage.local.get(['loggedIn', 'password'], function (data) {
         const storedPassword = data.password;
         // console.log(username, password)
         // console.log(storedUsername, storedPassword)
         hashPassword(password).then(hash => {
             // console.log('Hashed password:', hash);
         
-        if (storedPassword === hash && storedUsername === username) {
+        if (storedPassword === hash) {
             chrome.storage.local.remove(['loggedIn', 'username'], function () {
                 if (chrome.runtime.lastError) {
                     console.error('Error clearing data:', chrome.runtime.lastError);
@@ -183,7 +182,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
 
     } else if (request.action === 'logout') {
-        logoutUser(request.username, request.password, sendResponse);
+        logoutUser( request.password, sendResponse);
         return true;
     }
 });
