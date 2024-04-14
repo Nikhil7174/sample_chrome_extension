@@ -1,3 +1,18 @@
+// Event listener for tab creation
+chrome.tabs.onCreated.addListener(function (tab) {
+    // Check if kids mode is on
+    chrome.storage.local.get(['loggedIn', 'sessionTimeout'], function (data) {
+        if (data.loggedIn && data.sessionTimeout) {
+            // Kids mode is on and session has timed out, get the URL of the newly created tab
+            const tabUrl = tab.url;
+            console.log("New tab URL:", tabUrl);
+            if (tabUrl !== "chrome://extensions/") {
+                chrome.tabs.update(tab.id, { url: '/sessionTimeout.html' });
+            }
+        }
+    });
+});
+
 //session timeout timer
 let timeoutId;
 
@@ -7,100 +22,100 @@ function startSessionTimeout() {
     timeoutId = setTimeout(sessionTimeout, timeoutDuration);
 }
 
-// Event listener for tab creation
-// chrome.tabs.onCreated.addListener(function(tab) {
-//     // Check if kids mode is on
-//     chrome.storage.local.get(['loggedIn', 'sessionTimedOut'], function(data) {
-//         if (data.loggedIn && data.sessionTimedOut) {
-//             // Kids mode is on and session has timed out, get the URL of the newly created tab
-//             const tabUrl = tab.url;
-//             console.log("New tab URL:", tabUrl);
-//             if (tabUrl !== "chrome://extensions/") {
-//                 chrome.tabs.update(tab.id, { url: '/sessionTimeout.html' });
-//             }
-//         }
-//     });
-// });
+
 
 function startKidsMode(username, password, sendResponse) {
     console.log(username, password);
 
-    // Close all existing windows
-    chrome.windows.getAll({ populate: true }, function (windows) {
-        windows.forEach(function (window) {
-            chrome.windows.remove(window.id);
-        });
 
-        // Set the user as logged in
-        chrome.storage.local.set({ loggedIn: true, username: username, password: password }, function () {
-            if (chrome.runtime.lastError) {
-                console.error('Error storing data:', chrome.runtime.lastError);
-                sendResponse({ success: false });
-            } else if (username && password) {
-                console.log('Kids mode started successfully:', username);
-                sendResponse({ success: true });
+    // Set the user as logged in
+    chrome.storage.local.set({ loggedIn: true, username: username, password: password }, function () {
+        if (chrome.runtime.lastError) {
+            console.error('Error storing data:', chrome.runtime.lastError);
+            sendResponse({ success: false });
+        } else if (username && password) {
+            console.log('Kids mode started successfully:', username);
+            sendResponse({ success: true });
 
-                // Start session timeout
-                startSessionTimeout();
+            // Start session timeout
+            startSessionTimeout();
 
-                // Create a new window
-                chrome.windows.create({
-                    url: '/home.html',
-                    type: 'normal'
-                });
-            }
-        });
+            // Create a new window
+            chrome.windows.create({
+                url: '/home.html',
+                type: 'normal'
+            },
+                chrome.windows.getAll({ populate: true }, function (windows) {
+                    windows.forEach(function (window) {
+                        chrome.windows.remove(window.id);
+                    });
+                })
+            );
+        }
     });
 }
 
 
 // Function to handle user logout
 function logoutUser(username, password, sendResponse) {
-        // Close all existing windows
-        chrome.windows.getAll({ populate: true }, function (windows) {
-            windows.forEach(function (window) {
-                chrome.windows.remove(window.id);
-            });
-    chrome.storage.local.get(['loggedIn', 'username', 'password'], function(data) {
+    // Close all existing windows
+    chrome.storage.local.set({ sessionTimeout: false }, function () {
+        if (chrome.runtime.lastError) {
+            console.error('Error setting sessionTimeout flag:', chrome.runtime.lastError);
+        }
+    });
+
+    chrome.storage.local.get(['loggedIn', 'username', 'password'], function (data) {
         const storedUsername = data.username;
         const storedPassword = data.password;
         console.log(username, password)
         console.log(storedUsername, storedPassword)
-    if(storedPassword === password && storedUsername === username){
-    chrome.storage.local.remove(['loggedIn', 'username'], function () {
-        if (chrome.runtime.lastError) {
-            console.error('Error clearing data:', chrome.runtime.lastError);
-        } else {
-            console.log('User logged out successfully');
-            sendResponse({ success: true });
-            clearTimeout(timeoutId);
+        if (storedPassword === password && storedUsername === username) {
+            chrome.storage.local.remove(['loggedIn', 'username'], function () {
+                if (chrome.runtime.lastError) {
+                    console.error('Error clearing data:', chrome.runtime.lastError);
+                } else {
+                    console.log('User logged out successfully');
+                    sendResponse({ success: true });
+                    clearTimeout(timeoutId);
+                }
+            });
+            // Define the URL based on the type of logout
+            // let url = timeoutId ? 'sessionTimeout.html' : 'https://google.com';
+            chrome.windows.create({
+                url: 'https://google.com',
+                type: 'normal'
+            },
+                chrome.windows.getAll({ populate: true }, function (windows) {
+                    windows.forEach(function (window) {
+                        chrome.windows.remove(window.id);
+                    });
+                })
+                // chrome.windows.getCurrent(function (currentWindow) {
+                //     chrome.windows.remove(currentWindow.id);
+                // }),
+            )
         }
-    });
-    // Define the URL based on the type of logout
-    // let url = timeoutId ? 'sessionTimeout.html' : 'https://google.com';
-    chrome.windows.create({
-        url: 'https://google.com',
-        type: 'normal' 
-    },
-    // chrome.windows.getCurrent(function (currentWindow) {
-    //     chrome.windows.remove(currentWindow.id);
-    // }),
-    )}
-})
-})
+    })
 }
 
 //Function to handle session timeout
-function sessionTimeout(){
-    chrome.windows.getAll({ populate: true }, function (windows) {
-        windows.forEach(function (window) {
-            chrome.windows.remove(window.id);
-        });
+function sessionTimeout() {
+    chrome.storage.local.set({ sessionTimeout: true }, function () {
+        if (chrome.runtime.lastError) {
+            console.error('Error setting sessionTimeout flag:', chrome.runtime.lastError);
+        }
+    });
+
     chrome.windows.create({
         url: '/sessionTimeout.html',
-        type: 'normal' 
+        type: 'normal'
     },
-    )})
+        chrome.windows.getAll({ populate: true }, function (windows) {
+            windows.forEach(function (window) {
+                chrome.windows.remove(window.id);
+            });
+        }))
     // handleNewWindowCreation();
 }
 
