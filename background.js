@@ -9,6 +9,7 @@ chrome.tabs.onCreated.addListener(function (tab) {
             if (tabUrl !== "chrome://extensions/") {
                 chrome.tabs.update(tab.id, { url: '/sessionTimeout.html' });
             }
+            blockHttpsSearch();
         }
     });
 });
@@ -17,7 +18,7 @@ chrome.tabs.onCreated.addListener(function (tab) {
 let timeoutId;
 
 function startSessionTimeout() {
-    const timeoutDuration = 0.1 * 60 * 1000; // 30 minutes
+    const timeoutDuration = 0.15 * 60 * 1000; // 30 minutes
     clearTimeout(timeoutId);
     timeoutId = setTimeout(sessionTimeout, timeoutDuration);
 }
@@ -34,16 +35,46 @@ async function hashPassword(password) {
     return hashHex;
 }
 
-// Example usage
+// Function to block Google search URLs
+function blockHttpsSearch() {
+    const blockRule = {
+        id: 4,
+        priority: 1,
+        action: {
+            type: 'block'
+        },
+        condition: {
+            urlFilter: 'https://*/*',
+            resourceTypes: ['main_frame']
+        }
+    };
+
+    chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [],
+        addRules: [blockRule]
+    });
+}
+
+function allowHttpsSearch(callback) {
+    chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [4],
+        addRules: []
+    }, function() {
+        // Call the callback function after unblocking Google search
+        if (typeof callback === 'function') {
+            callback();
+        }
+    });
+}
 
 
 function startKidsMode(username, password, sendResponse) {
-    console.log(username, password);
+    // console.log(username, password);
 
 
     // Set the user as logged in
 hashPassword(password).then(hash => {
-    console.log('Hashed password:', hash);
+    // console.log('Hashed password:', hash);
     
     chrome.storage.local.set({ loggedIn: true, username: username, password: hash }, function () {
         if (chrome.runtime.lastError) {
@@ -86,10 +117,10 @@ function logoutUser(username, password, sendResponse) {
     chrome.storage.local.get(['loggedIn', 'username', 'password'], function (data) {
         const storedUsername = data.username;
         const storedPassword = data.password;
-        console.log(username, password)
-        console.log(storedUsername, storedPassword)
+        // console.log(username, password)
+        // console.log(storedUsername, storedPassword)
         hashPassword(password).then(hash => {
-            console.log('Hashed password:', hash);
+            // console.log('Hashed password:', hash);
         
         if (storedPassword === hash && storedUsername === username) {
             chrome.storage.local.remove(['loggedIn', 'username'], function () {
@@ -103,19 +134,21 @@ function logoutUser(username, password, sendResponse) {
         });
             // Define the URL based on the type of logout
             // let url = timeoutId ? 'sessionTimeout.html' : 'https://google.com';
-            chrome.windows.create({
-                url: 'https://google.com',
-                type: 'normal'
-            },
-                chrome.windows.getAll({ populate: true }, function (windows) {
-                    windows.forEach(function (window) {
-                        chrome.windows.remove(window.id);
-                    });
-                })
-                // chrome.windows.getCurrent(function (currentWindow) {
-                //     chrome.windows.remove(currentWindow.id);
-                // }),
-            )
+            allowHttpsSearch(()=>{
+                chrome.windows.create({
+                    url: 'https://google.com',
+                    type: 'normal'
+                },
+                    chrome.windows.getAll({ populate: true }, function (windows) {
+                        windows.forEach(function (window) {
+                            chrome.windows.remove(window.id);
+                        });
+                    })
+                    // chrome.windows.getCurrent(function (currentWindow) {
+                    //     chrome.windows.remove(currentWindow.id);
+                    // }),
+                )
+            });
         }
     }).catch(error => {
         console.error('Error hashing password:', error);
