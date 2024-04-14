@@ -23,20 +23,35 @@ function startSessionTimeout() {
 }
 
 
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+
+    return hashHex;
+}
+
+// Example usage
+
 
 function startKidsMode(username, password, sendResponse) {
     console.log(username, password);
 
 
     // Set the user as logged in
-    chrome.storage.local.set({ loggedIn: true, username: username, password: password }, function () {
+hashPassword(password).then(hash => {
+    console.log('Hashed password:', hash);
+    
+    chrome.storage.local.set({ loggedIn: true, username: username, password: hash }, function () {
         if (chrome.runtime.lastError) {
             console.error('Error storing data:', chrome.runtime.lastError);
             sendResponse({ success: false });
         } else if (username && password) {
             console.log('Kids mode started successfully:', username);
             sendResponse({ success: true });
-
             // Start session timeout
             startSessionTimeout();
 
@@ -52,6 +67,9 @@ function startKidsMode(username, password, sendResponse) {
                 })
             );
         }
+    }).catch(error => {
+        console.error('Error hashing password:', error);
+    });
     });
 }
 
@@ -70,7 +88,10 @@ function logoutUser(username, password, sendResponse) {
         const storedPassword = data.password;
         console.log(username, password)
         console.log(storedUsername, storedPassword)
-        if (storedPassword === password && storedUsername === username) {
+        hashPassword(password).then(hash => {
+            console.log('Hashed password:', hash);
+        
+        if (storedPassword === hash && storedUsername === username) {
             chrome.storage.local.remove(['loggedIn', 'username'], function () {
                 if (chrome.runtime.lastError) {
                     console.error('Error clearing data:', chrome.runtime.lastError);
@@ -79,7 +100,7 @@ function logoutUser(username, password, sendResponse) {
                     sendResponse({ success: true });
                     clearTimeout(timeoutId);
                 }
-            });
+        });
             // Define the URL based on the type of logout
             // let url = timeoutId ? 'sessionTimeout.html' : 'https://google.com';
             chrome.windows.create({
@@ -96,6 +117,9 @@ function logoutUser(username, password, sendResponse) {
                 // }),
             )
         }
+    }).catch(error => {
+        console.error('Error hashing password:', error);
+    });
     })
 }
 

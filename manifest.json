@@ -1,40 +1,46 @@
 {
-    "manifest_version": 3,
-    "name": "My Login Extension",
-    "version": "1.0",
-    "description": "A simple login extension.",
-    "permissions": [
-      "storage",
-      "tabs",
-      "activeTab",
-      "windows",
-      "declarativeNetRequest"
-    ],
-    "background": {
-      "service_worker": "background.js"
-    },
-    "action": {
-      "default_popup": "popup.html"
-    },
-    "content_scripts": [
-      {
-        "matches": ["<all_urls>"],
-        "js": ["content.js"]
-      }
-    ],
-    "icons": {
+  "manifest_version": 3,
+  "name": "My Login Extension",
+  "version": "1.0",
+  "description": "A simple login extension.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "windows",
+    "declarativeNetRequest",
+    "action"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
       "16": "Logo.png",
       "48": "Logo.png",
       "128": "/Logo.png"
-    },
-  
-    "declarative_net_request": {
-        "rule_resources": [
-            {
-                "id": "ruleset_1",
-                "enabled": true,
-                "path": "rules.json"
-            }
-        ]
     }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "16": "Logo.png",
+    "48": "Logo.png",
+    "128": "/Logo.png"
+  },
+
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
 }
