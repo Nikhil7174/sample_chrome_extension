@@ -32,15 +32,5 @@
     "16": "Logo.png",
     "48": "Logo.png",
     "128": "/Logo.png"
-  },
-
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "ruleset_1",
-        "enabled": true,
-        "path": "rules.json"
-      }
-    ]
   }
 }

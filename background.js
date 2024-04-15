@@ -1,11 +1,11 @@
 // Event listener for tab creation
-chrome.tabs.onCreated.addListener(function (tab) {
+chrome.tabs.onCreated.addListener((tab) => {
     // Check if kids mode is on
-    chrome.storage.local.get(['loggedIn', 'sessionTimeout'], function (data) {
+    chrome.storage.local.get(['loggedIn', 'sessionTimeout'], (data) => {
         if (data.loggedIn && data.sessionTimeout) {
             // Kids mode is on and session has timed out, get the URL of the newly created tab
             const tabUrl = tab.url;
-            console.log("New tab URL:", tabUrl);
+            // console.log("New tab URL:", tabUrl);
             if (tabUrl !== "chrome://extensions/") {
                 chrome.tabs.update(tab.id, { url: '/sessionTimeout.html' });
             }
@@ -17,14 +17,14 @@ chrome.tabs.onCreated.addListener(function (tab) {
 //session timeout timer
 let timeoutId;
 
-function startSessionTimeout() {
+const startSessionTimeout = () => {
     const timeoutDuration = 0.15 * 60 * 1000; // 30 minutes
     clearTimeout(timeoutId);
     timeoutId = setTimeout(sessionTimeout, timeoutDuration);
 }
 
-
-async function hashPassword(password) {
+// Hash password function
+const hashPassword = async (password) => {
     const encoder = new TextEncoder();
     const data = encoder.encode(password);
 
@@ -36,7 +36,7 @@ async function hashPassword(password) {
 }
 
 // Function to block Google search URLs
-function blockHttpsSearch() {
+const blockHttpsSearch = () => {
     const blockRule = {
         id: 4,
         priority: 1,
@@ -55,109 +55,122 @@ function blockHttpsSearch() {
     });
 }
 
-function allowHttpsSearch(callback) {
-    chrome.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: [4],
-        addRules: []
-    }, function() {
-        // Call the callback function after unblocking Google search
-        if (typeof callback === 'function') {
-            callback();
-        }
-    });
-}
-
-
-function startKidsMode(username, password, sendResponse) {
-    // console.log(username, password);
-
-    if(username === password){
-    // Set the user as logged in
-hashPassword(password).then(hash => {
-    // console.log('Hashed password:', hash);
-    
-    chrome.storage.local.set({ loggedIn: true, password:hash }, function () {
-        if (chrome.runtime.lastError) {
-            console.error('Error storing data:', chrome.runtime.lastError);
-            sendResponse({ success: false });
-        } else if (username && password) {
-            console.log('Kids mode started successfully:', username);
-            sendResponse({ success: true });
-            // Start session timeout
-            startSessionTimeout();
-
-            // Create a new window
-            chrome.windows.create({
-                url: '/home.html',
-                type: 'normal'
-            },
-                chrome.windows.getAll({ populate: true }, function (windows) {
-                    windows.forEach(function (window) {
-                        chrome.windows.remove(window.id);
-                    });
-                })
-            );
-        }
-    }).catch(error => {
-        console.error('Error hashing password:', error);
-    });
-    });}
-}
-
-
-// Function to handle user logout
-function logoutUser(password, sendResponse) {
-    // Close all existing windows
-    chrome.storage.local.set({ sessionTimeout: false }, function () {
-        if (chrome.runtime.lastError) {
-            console.error('Error setting sessionTimeout flag:', chrome.runtime.lastError);
-        }
-    });
-
-    chrome.storage.local.get(['loggedIn', 'password'], function (data) {
-        const storedPassword = data.password;
-        // console.log(username, password)
-        // console.log(storedUsername, storedPassword)
-        hashPassword(password).then(hash => {
-            // console.log('Hashed password:', hash);
-        
-        if (storedPassword === hash) {
-            chrome.storage.local.remove(['loggedIn', 'username'], function () {
-                if (chrome.runtime.lastError) {
-                    console.error('Error clearing data:', chrome.runtime.lastError);
-                } else {
-                    console.log('User logged out successfully');
-                    sendResponse({ success: true });
-                    clearTimeout(timeoutId);
-                }
+// Function to allow Google search URLs
+const allowHttpsSearchAsync = async () => {
+    return new Promise((resolve, reject) => {
+        chrome.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [4],
+            addRules: []
+        }, () => {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve();
+            }
         });
-            // Define the URL based on the type of logout
-            // let url = timeoutId ? 'sessionTimeout.html' : 'https://google.com';
-            allowHttpsSearch(()=>{
-                chrome.windows.create({
-                    url: 'https://google.com',
-                    type: 'normal'
-                },
-                    chrome.windows.getAll({ populate: true }, function (windows) {
-                        windows.forEach(function (window) {
-                            chrome.windows.remove(window.id);
-                        });
-                    })
-                    // chrome.windows.getCurrent(function (currentWindow) {
-                    //     chrome.windows.remove(currentWindow.id);
-                    // }),
-                )
+    });
+}
+
+// Function to start kids mode
+const startKidsMode = async (cpassword, password, sendResponse) => {
+    if (cpassword === password) {
+        try{
+        const hash = await hashPassword(password)
+            chrome.storage.local.set({ loggedIn: true, password: hash }, () => {
+                if (chrome.runtime.lastError) {
+                    console.error('Error storing data:', chrome.runtime.lastError);
+                    sendResponse({ success: false });
+                } else if (cpassword && password) {
+                    console.log('Kids mode started successfully:', cpassword);
+                    sendResponse({ success: true });
+                    // Start session timeout
+                    startSessionTimeout();
+
+                    // Create a new window
+                    chrome.windows.create({
+                        url: '/home.html',
+                        type: 'normal'
+                    },
+                        chrome.windows.getAll({ populate: true }, (windows) => {
+                            windows.forEach((window) => {
+                                chrome.windows.remove(window.id);
+                            });
+                        })
+                    );
+                }
             });
         }
-    }).catch(error => {
-        console.error('Error hashing password:', error);
-    });
-    })
+        catch(error) {
+            console.error('Error hashing password:', error);
+        }
+    }
+}
+
+// Function to handle user logout
+const logoutUser = async (password, sendResponse) => {
+    try {
+        // Set sessionTimeout to false
+        chrome.storage.local.set({ sessionTimeout: false });
+
+        // Retrieve stored data
+        const data = await new Promise((resolve, reject) => {
+            chrome.storage.local.get(['loggedIn', 'password'], (data) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(data);
+                }
+            });
+        });
+
+        const storedPassword = data.password;
+
+        // Hash the provided password
+        const hash = await hashPassword(password);
+
+        // Check if the provided password matches the stored password
+        if (storedPassword === hash) {
+            // Remove user data from storage
+            await new Promise((resolve, reject) => {
+                chrome.storage.local.remove(['loggedIn', 'username'], () => {
+                    if (chrome.runtime.lastError) {
+                        reject(chrome.runtime.lastError);
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+
+            console.log('User logged out successfully');
+            sendResponse({ success: true });
+            clearTimeout(timeoutId);
+
+            await allowHttpsSearchAsync();
+
+            // Close current windows
+            chrome.windows.getAll({ populate: true }, (windows) => {
+                windows.forEach((window) => {
+                    chrome.windows.remove(window.id);
+                });
+            });
+
+            // Create a new window with Google
+            chrome.windows.create({
+                url: 'https://google.com',
+                type: 'normal'
+            });
+        } else {
+            sendResponse({ success: false, error: 'Incorrect password' });
+        }
+    } catch (error) {
+        console.error('Error logging out:', error);
+        sendResponse({ success: false, error: 'An error occurred while logging out' });
+    }
 }
 
 //Function to handle session timeout
-function sessionTimeout() {
-    chrome.storage.local.set({ sessionTimeout: true }, function () {
+const sessionTimeout = () => {
+    chrome.storage.local.set({ sessionTimeout: true }, () => {
         if (chrome.runtime.lastError) {
             console.error('Error setting sessionTimeout flag:', chrome.runtime.lastError);
         }
@@ -167,24 +180,22 @@ function sessionTimeout() {
         url: '/sessionTimeout.html',
         type: 'normal'
     },
-        chrome.windows.getAll({ populate: true }, function (windows) {
-            windows.forEach(function (window) {
+        chrome.windows.getAll({ populate: true }, (windows) => {
+            windows.forEach((window) => {
                 chrome.windows.remove(window.id);
             });
-        }))
-    // handleNewWindowCreation();
+        })
+    )
 }
 
 // Listener for messages from content scripts or UI components
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'startKidsMode') {
-        startKidsMode(request.username, request.password, sendResponse);
+        startKidsMode(request.cpassword, request.password, sendResponse);
         return true;
 
     } else if (request.action === 'logout') {
-        logoutUser( request.password, sendResponse);
+        logoutUser(request.password, sendResponse);
         return true;
     }
 });
-
-// chrome.windows.onCreated.addListener(handleNewWindowCreation);

@@ -1,73 +1,103 @@
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async () => {
     const loginForm = document.getElementById('loginForm');
-    const usernameInput = document.getElementById('cpassword');
+    const cpasswordInput = document.getElementById('cpassword');
     const passwordInput = document.getElementById('password');
     const statusDiv = document.getElementById('status');
     const loginContainer = document.getElementById('container');
     const kidsContent = document.getElementById('kidsContent');
-    const logoutButton = document.getElementById('logoutBtn'); 
-    const password2 = document.getElementById('password2'); 
-
+    const logoutButton = document.getElementById('logoutBtn');
+    const password2 = document.getElementById('password2');
 
     // Function to update popup content based on login status
-    function updatePopupContent() {
+    const updatePopupContent = async () => {
         // Check if user is logged in
-        chrome.storage.local.get('loggedIn', function (data) {
-            if (data.loggedIn) {
-                // User is logged in
-                loginContainer.style.display = 'none';
-                kidsContent.style.display = 'block';
-            } else {
-                // User is not logged in
-                loginContainer.style.display = 'block';
-                kidsContent.style.display = 'none';
-            }
+        const data = await new Promise((resolve, reject) => {
+            chrome.storage.local.get('loggedIn', (data) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(data);
+                }
+            });
         });
+
+        if (data.loggedIn) {
+            // User is logged in
+            loginContainer.style.display = 'none';
+            kidsContent.style.display = 'block';
+        } else {
+            // User is not logged in
+            loginContainer.style.display = 'block';
+            kidsContent.style.display = 'none';
+        }
     }
 
     // Update popup content when the popup is opened
-    updatePopupContent();
+    await updatePopupContent();
 
     // Event listener for login form submission
-    loginForm.addEventListener('submit', function (event) {
+    loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const pass1 = usernameInput.value;
+        const pass1 = cpasswordInput.value;
         const pass2 = passwordInput.value;
 
         statusDiv.textContent = '';
 
-        // Send login request to background script
-        chrome.runtime.sendMessage({ action: 'startKidsMode', username: pass1, password: pass2 }, function (response) {
-            if (response && response.success == true) {
+        try {
+            // Send login request to background script
+            const response = await new Promise((resolve, reject) => {
+                chrome.runtime.sendMessage({ action: 'startKidsMode', cpassword: pass1, password: pass2 }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        reject(chrome.runtime.lastError);
+                    } else {
+                        resolve(response);
+                    }
+                });
+            });
+
+            if (response && response.success === true) {
                 statusDiv.textContent = 'Kids mode started successfully!';
-                // console.log(username, "ssss")
-                updatePopupContent();
+                await updatePopupContent();
             } else {
                 statusDiv.textContent = 'Kids mode failed. Please try again.';
-                usernameInput.value = '';
+                cpasswordInput.value = '';
                 passwordInput.value = '';
             }
-        });
+        } catch (error) {
+            console.error('Error logging in:', error);
+            statusDiv.textContent = 'An error occurred while logging in.';
+        }
     });
 
     // Event listener for logout button
-    logoutButton.addEventListener('click', function (event) {
+    logoutButton.addEventListener('click', async (event) => {
         event.preventDefault();
-        // const pass1 = username2.value;
         const pass2 = password2.value;
 
         statusDiv.textContent = '';
 
-        // Send logout request to background script
-        chrome.runtime.sendMessage({ action: 'logout', password: pass2 }, function (response) {
-            if (response && response.success == true) {
+        try {
+            // Send logout request to background script
+            const response = await new Promise((resolve, reject) => {
+                chrome.runtime.sendMessage({ action: 'logout', password: pass2 }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        reject(chrome.runtime.lastError);
+                    } else {
+                        resolve(response);
+                    }
+                });
+            });
+
+            if (response && response.success === true) {
                 statusDiv.textContent = 'Logged out successfully!';
-                updatePopupContent();
+                await updatePopupContent();
             } else {
                 statusDiv.textContent = 'Failed to logout.';
-                // usernameInput.value = '';
                 passwordInput.value = '';
             }
-        });
+        } catch (error) {
+            console.error('Error logging out:', error);
+            statusDiv.textContent = 'An error occurred while logging out.';
+        }
     });
 });
